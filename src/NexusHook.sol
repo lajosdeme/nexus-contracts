@@ -129,6 +129,21 @@ contract NexusHook is BaseHook {
         );
     }
 
+    function executeLLMDecision(uint256 orderId, string memory decision) external {
+        require(msg.sender == address(llmOracle), "only LLM oracle");
+
+        PendingOrder storage order = pendingOrders[orderId];
+        require(order.isActive, "order not active");
+
+        if (keccak256(bytes(decision)) == keccak256("dark_pool")) {
+            _routeToDarkPool(orderId);
+        } else if (keccak256(bytes(decision)) == keccak256("twap_vault")) {
+            _routeToTWAPVault(orderId);
+        }
+
+        emit LLMDecisionExecuted(orderId, decision);
+    }
+
     function _calculateImmediateAmount(
         PoolKey calldata key,
         uint256 totalAmount

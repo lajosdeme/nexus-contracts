@@ -19,4 +19,13 @@ contract MockYieldVault is IYieldVault {
     function getOrderDeposit(uint256 orderId) external view returns (uint256) {
         return orderDeposits[orderId];
     }
+
+    function executeTWAPChunk(
+        uint256 orderId,
+        uint256 chunkAmount,
+        address swapTarget,
+        bytes calldata swapData
+    ) external {
+        
+    }
 }

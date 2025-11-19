@@ -7,6 +7,7 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {IStateView} from "@uniswap/v4-periphery/src/interfaces/IStateView.sol";
 
 import {
     BeforeSwapDelta,
@@ -34,6 +35,8 @@ contract NexusHook is BaseHook {
     // Maximum immediate execution without routing (10% of liquidity or $1000)
     uint256 public constant IMMEDIATE_EXECUTION_LIMIT = 1_000 ether;
 
+    IStateView immutable STATE_VIEW;
+
     ILLMOracle public llmOracle;
     IDarkPool public darkPool;
     IYieldVault public yieldVault;
@@ -57,7 +60,9 @@ contract NexusHook is BaseHook {
     mapping(uint256 => PendingOrder) public pendingOrders;
     uint256 public orderIdCounter;
 
-    constructor(IPoolManager _poolManager) BaseHook(_poolManager) {}
+    constructor(IPoolManager _poolManager, IStateView _stateView) BaseHook(_poolManager) {
+        STATE_VIEW = _stateView;
+    }
 
     function getHookPermissions()
         public
@@ -148,8 +153,7 @@ contract NexusHook is BaseHook {
         PoolKey calldata key,
         uint256 totalAmount
     ) internal view returns (uint256) {
-        // Fow now simple heuristic, execute up to 10% of liquidity
-        // TODO: Calculate actual slippage
+        // Fow now simple heuristic, execute up to X% of liquidity
         uint256 L = _getPoolLiquidity(key);
         return uint128((L * swapLiqPct) / 10_000);
     }
@@ -158,7 +162,7 @@ contract NexusHook is BaseHook {
         PoolKey calldata key
     ) internal view returns (uint256) {
         PoolId poolId = key.toId();
-        return 100_000 ether; // TODO
+        return STATE_VIEW.getLiquidity(poolId);
     }
 
     function _routeToLLM(

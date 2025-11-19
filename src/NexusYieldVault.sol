@@ -8,8 +8,9 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 import {IPool} from "./interfaces/IPool.sol";
+import {IYieldVault} from "./interfaces/IYieldVault.sol";
 
-contract NexusYieldVault is ERC4626 {
+contract NexusYieldVault is ERC4626, IYieldVault {
     IPool public immutable aavePool;
     IERC20 public immutable aToken;
 

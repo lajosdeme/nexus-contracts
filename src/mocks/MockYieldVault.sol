@@ -8,12 +8,13 @@ contract MockYieldVault is IYieldVault {
 
     mapping(uint256 => uint256) public orderDeposits;
 
-    function depositForOrder(uint256 orderId, uint256 amountIn) external override {
-        orderDeposits[orderId] = amountIn;
-        emit DepositForOrder(orderId, amountIn);
+    function depositForOrder(uint256 orderId, uint256 amount, uint256 deadline) external returns (uint256 shares) {
+        orderDeposits[orderId] = amount;
+        emit DepositForOrder(orderId, amount);
 
         // Mock implementation - just record the deposit
         // In real implementation, this would deposit into a yield-generating vault
+        return amount; // mock shares
     }
 
     function getOrderDeposit(uint256 orderId) external view returns (uint256) {

@@ -64,6 +64,22 @@ contract NexusHook is BaseHook {
         STATE_VIEW = _stateView;
     }
 
+    function setLLMOracle(ILLMOracle _llmOracle) external {
+        llmOracle = _llmOracle;
+    }
+
+    function setDarkPool(IDarkPool _darkPool) external {
+        darkPool = _darkPool;
+    }
+
+    function setYieldVault(IYieldVault _yieldVault) external {
+        yieldVault = _yieldVault;
+    }
+
+    function setTWAPExecutor(ITWAPExecutor _twapExecutor) external {
+        twapExecutor = _twapExecutor;
+    }
+
     function getHookPermissions()
         public
         pure
@@ -177,14 +193,14 @@ contract NexusHook is BaseHook {
 
     function _routeToDarkPool(uint256 orderId) internal {
         PendingOrder memory order = pendingOrders[orderId];
-        darkPool.submitOrder(orderId, order);
+        darkPool.submitOrder(orderId, order.user, order.tokenIn, order.tokenOut, order.amountIn);
     }
 
     function _routeToTWAPVault(uint256 orderId) internal {
         PendingOrder storage order = pendingOrders[orderId];
         
         // Deposit in vault
-        yieldVault.depositForOrder(orderId, order.amountIn);
+        yieldVault.depositForOrder(orderId, order.amountIn, order.deadline);
         
         // Schedule TWAP execution
         twapExecutor.scheduleTWAP(orderId, order);

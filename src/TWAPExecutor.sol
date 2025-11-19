@@ -2,10 +2,12 @@
 pragma solidity ^0.8.24;
 
 import {IYieldVault} from "./interfaces/IYieldVault.sol";
+import {ITWAPExecutor} from "./interfaces/ITWAPExecutor.sol";
+import {NexusHook} from "./NexusHook.sol";
 
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
-contract TWAPExecutor {
+contract TWAPExecutor is ITWAPExecutor {
     IYieldVault public vault;
     IPoolManager public poolManager;
 
@@ -32,12 +34,17 @@ contract TWAPExecutor {
         uint256 amount
     );
 
+    function setVault(IYieldVault _vault) external {
+        vault = _vault;
+    }
+
+    function setPoolManager(IPoolManager _poolManager) external {
+        poolManager = _poolManager;
+    }
+
     function scheduleTWAP(
         uint256 orderId,
-        address user,
-        address tokenIn,
-        address tokenOut,
-        uint256 amount
+        NexusHook.PendingOrder memory order
     ) external {
         // Simple: 5 chunks over 1 hour = execute every 12 minutes
         uint256 numChunks = 5;
@@ -45,10 +52,10 @@ contract TWAPExecutor {
 
         twapOrders[orderId] = TWAPOrder({
             orderId: orderId,
-            user: user,
-            tokenIn: tokenIn,
-            tokenOut: tokenOut,
-            totalAmount: amount,
+            user: order.user,
+            tokenIn: order.tokenIn,
+            tokenOut: order.tokenOut,
+            totalAmount: order.amountIn,
             executedAmount: 0,
             numChunks: numChunks,
             intervalSeconds: intervalSeconds,

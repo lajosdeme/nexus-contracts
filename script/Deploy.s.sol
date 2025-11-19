@@ -18,9 +18,23 @@ import {TWAPExecutor} from "../src/TWAPExecutor.sol";
 import {NexusHook} from "../src/NexusHook.sol";
 import {MockLLMOracle} from "../src/mocks/MockLLMOracle.sol";
 
+import {MockV4Pool} from "../src/mocks/MockV4Pool.sol";
+
+import {SwapParams} from "../lib/uniswap-hooks/lib/v4-core/src/types/PoolOperation.sol";
+
+
+
+/* 
+USDC: 0x613106b0cF1C765e877ae5cD8a8D40CfEE98EB62
+  NXX: 0x8e99D58dE0140e07331Fb388722906AE2499584c
+
+  POOL: 0x71c34113a6A3E18C36db14D2D756dD6A7f08daC0
+ */
+ 
 contract Deploy is Script {
     function run() external {
-        vm.startBroadcast();
+        uint256 deployerPrivKey = vm.envUint("KEY");
+        vm.startBroadcast(deployerPrivKey);
 
         // Deploy mock ERC20 tokens
         MockERC20 usdc = new MockERC20("USD Coin", "USDC", 18);
@@ -51,6 +65,8 @@ contract Deploy is Script {
         nexusHook.setYieldVault(IYieldVault(address(yieldVault)));
         nexusHook.setTWAPExecutor(ITWAPExecutor(address(twapExecutor)));
 
+        MockV4Pool pool = new MockV4Pool(address(nexusHook), address(usdc), address(nxx));
+
         // Log addresses
         console2.log("USDC:", address(usdc));
         console2.log("NXX:", address(nxx));
@@ -63,6 +79,18 @@ contract Deploy is Script {
         console2.log("TWAPExecutor:", address(twapExecutor));
         console2.log("MockLLMOracle:", address(llmOracle));
         console2.log("NexusHook:", address(nexusHook));
+        console2.log("POOL:", address(pool));
+
+        bytes memory dummy;
+        pool.swap(
+            SwapParams({
+            zeroForOne: true,
+            amountSpecified: 1_000_000 ether,
+            sqrtPriceLimitX96: 0
+        }), dummy);
+
+        nexusHook.pendingOrders(1);
+
 
         vm.stopBroadcast();
     }

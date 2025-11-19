@@ -26,6 +26,8 @@ import {IDarkPool} from "./interfaces/IDarkPool.sol";
 import {ITWAPExecutor} from "./interfaces/ITWAPExecutor.sol";
 import {IYieldVault} from "./interfaces/IYieldVault.sol";
 
+import {OrderEncoder} from "./libs/OrderEncoder.sol";
+
 contract NexusHook is BaseHook {
     using PoolIdLibrary for PoolKey;
 
@@ -60,7 +62,10 @@ contract NexusHook is BaseHook {
     mapping(uint256 => PendingOrder) public pendingOrders;
     uint256 public orderIdCounter;
 
-    constructor(IPoolManager _poolManager, IStateView _stateView) BaseHook(_poolManager) {
+    constructor(
+        IPoolManager _poolManager,
+        IStateView _stateView
+    ) BaseHook(_poolManager) {
         STATE_VIEW = _stateView;
     }
 
@@ -90,12 +95,12 @@ contract NexusHook is BaseHook {
             Hooks.Permissions({
                 beforeInitialize: false,
                 afterInitialize: false,
-                beforeAddLiquidity: false,
+                beforeAddLiquidity: true,
                 afterAddLiquidity: false,
-                beforeRemoveLiquidity: false,
+                beforeRemoveLiquidity: true,
                 afterRemoveLiquidity: false,
-                beforeSwap: true, // We need this
-                afterSwap: false,
+                beforeSwap: true,
+                afterSwap: true,
                 beforeDonate: false,
                 afterDonate: false,
                 beforeSwapReturnDelta: false,
@@ -150,7 +155,10 @@ contract NexusHook is BaseHook {
         );
     }
 
-    function executeLLMDecision(uint256 orderId, string memory decision) external {
+    function executeLLMDecision(
+        uint256 orderId,
+        string memory decision
+    ) external {
         require(msg.sender == address(llmOracle), "only LLM oracle");
 
         PendingOrder storage order = pendingOrders[orderId];
@@ -193,15 +201,20 @@ contract NexusHook is BaseHook {
 
     function _routeToDarkPool(uint256 orderId) internal {
         PendingOrder memory order = pendingOrders[orderId];
-        darkPool.submitOrder(orderId, order.user, order.tokenIn, order.tokenOut, order.amountIn);
+
+        bytes32 encryptedOrder = OrderEncoder.encodeOrder(order.tokenIn, order.tokenOut, order.amountIn, 0);
+        darkPool.submitOrder(
+            orderId,
+            encryptedOrder
+        );
     }
 
     function _routeToTWAPVault(uint256 orderId) internal {
         PendingOrder storage order = pendingOrders[orderId];
-        
+
         // Deposit in vault
         yieldVault.depositForOrder(orderId, order.amountIn, order.deadline);
-        
+
         // Schedule TWAP execution
         twapExecutor.scheduleTWAP(orderId, order);
     }

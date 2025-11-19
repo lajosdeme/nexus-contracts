@@ -22,16 +22,14 @@ contract DarkPool is IDarkPool {
     mapping(uint256 => EncryptedOrder) public encryptedOrders;
     mapping(uint256 => RevealedOrder) public revealedOrders;
 
-    uint256 public orderCounter;
-
     event OrderSubmitted(uint256 indexed orderId, address indexed trader);
     event OrderMatched(uint256 indexed orderId1, uint256 indexed orderId2);
     event OrderRevealed(uint256 indexed orderId);
 
     function submitOrder(
+        uint256 orderId,
         bytes32 encryptedDetails
-    ) external returns (uint256 orderId) {
-        orderId = ++orderCounter;
+    ) external {
 
         encryptedOrders[orderId] = EncryptedOrder({
             trader: msg.sender,
@@ -41,9 +39,6 @@ contract DarkPool is IDarkPool {
         });
 
         emit OrderSubmitted(orderId, msg.sender);
-
-        // Off-chain service will attempt to match
-        return orderId;
     }
 
     function submitOrder(uint256 orderId, address user, address tokenIn, address tokenOut, uint256 amountIn) external {
